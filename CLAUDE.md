@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-This project is in the **implementation phase** — the full spec is in `prd.md` (Portuguese). UI mockups live in `.superpowers/`. No source code exists yet.
+Implementação completa. App em produção em https://quiz-claude-code-sigma.vercel.app
 
 ## Stack
 
