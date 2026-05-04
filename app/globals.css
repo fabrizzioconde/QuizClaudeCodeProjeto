@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0f0f13;
+  color: #e2e2f0;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-red {
+  animation: pulse-red 1s ease-in-out infinite;
+}
