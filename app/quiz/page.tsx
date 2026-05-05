@@ -40,6 +40,7 @@ export default function QuizPage() {
   const [feedbackState, setFeedbackState] = useState<FeedbackState>('none')
   const [lastUserAnswer, setLastUserAnswer] = useState<boolean | undefined>(undefined)
   const [showReview, setShowReview] = useState(false)
+  const [reviewLevel, setReviewLevel] = useState<Level>('iniciante')
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0)
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -47,9 +48,11 @@ export default function QuizPage() {
   const handleTimeExpiredRef = useRef<() => void>(() => {})
 
   const currentLevel = session.currentLevel
-  const levelIndex = LEVEL_ORDER.indexOf(currentLevel)
-  const levelQuestions: Question[] = session.questions[levelIndex] ?? []
-  const levelAnswers = session.answers.filter((a) => a.level === currentLevel)
+  // During review, currentLevel was already advanced by completeLevel — use reviewLevel instead
+  const displayLevel = showReview ? reviewLevel : currentLevel
+  const displayLevelIndex = LEVEL_ORDER.indexOf(displayLevel)
+  const levelQuestions: Question[] = session.questions[displayLevelIndex] ?? []
+  const levelAnswers = session.answers.filter((a) => a.level === displayLevel)
   const currentQuestion = levelQuestions[questionIndex]
 
   const totalDuration = LEVEL_DURATIONS[currentLevel]
@@ -93,6 +96,7 @@ export default function QuizPage() {
     const levelAnswersNow = session.answers.filter((a) => a.level === currentLevel)
     const pts = currentLevel === 'iniciante' ? 100 : currentLevel === 'intermediario' ? 150 : 200
     const score = levelAnswersNow.filter((a) => a.isCorrect).length * pts
+    setReviewLevel(currentLevel)
     completeLevel(currentLevel, score)
     setShowReview(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,6 +132,7 @@ export default function QuizPage() {
         }].filter((a) => a.isCorrect).length * (
           currentLevel === 'iniciante' ? 100 : currentLevel === 'intermediario' ? 150 : 200
         )
+        setReviewLevel(currentLevel)
         completeLevel(currentLevel, finalScore)
         setShowReview(true)
       } else {
@@ -141,7 +146,7 @@ export default function QuizPage() {
     setQuestionIndex(0)
     setFeedbackState('none')
 
-    const nextLevelIdx = levelIndex + 1
+    const nextLevelIdx = displayLevelIndex + 1
     if (nextLevelIdx >= LEVEL_ORDER.length) {
       router.push('/resultado')
     }
@@ -155,13 +160,15 @@ export default function QuizPage() {
 
   if (!session.nickname) return null
 
-  const isLastLevel = levelIndex === LEVEL_ORDER.length - 1
-  const nextLevelLabel = !isLastLevel ? LEVEL_LABELS[LEVEL_ORDER[levelIndex + 1]] : null
+  const isLastLevel = displayLevelIndex === LEVEL_ORDER.length - 1
+  const nextLevelLabel = !isLastLevel ? LEVEL_LABELS[LEVEL_ORDER[displayLevelIndex + 1]] : null
 
-  // Compute score for current level for review
-  const currentLevelScore = session.answers
+  // Running score for the active quiz level (0 during review to avoid double-counting with session.scores)
+  const currentLevelScore = showReview ? 0 : session.answers
     .filter((a) => a.level === currentLevel && a.isCorrect)
     .length * (currentLevel === 'iniciante' ? 100 : currentLevel === 'intermediario' ? 150 : 200)
+
+  const reviewLevelScore = session.scores[reviewLevel]
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-start px-4 py-6">
@@ -169,9 +176,9 @@ export default function QuizPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <span
-            className={`text-sm font-semibold px-3 py-1 rounded-full ${LEVEL_COLORS[currentLevel]}`}
+            className={`text-sm font-semibold px-3 py-1 rounded-full ${LEVEL_COLORS[displayLevel]}`}
           >
-            {LEVEL_LABELS[currentLevel]}
+            {LEVEL_LABELS[displayLevel]}
           </span>
           <span className="text-sm text-gray-400">
             {session.scores.iniciante + session.scores.intermediario + session.scores.avancado + currentLevelScore}{' '}
@@ -193,11 +200,11 @@ export default function QuizPage() {
           <div className="space-y-4">
             <div className="bg-surface border border-surface-alt rounded-card-lg p-5 text-center">
               <div className="text-2xl font-bold text-primary mb-1">
-                {currentLevelScore.toLocaleString('pt-BR')} pts
+                {reviewLevelScore.toLocaleString('pt-BR')} pts
               </div>
               <div className="text-gray-400 text-sm">
                 {levelAnswers.filter((a) => a.isCorrect).length}/{levelQuestions.length} acertos —{' '}
-                {LEVEL_LABELS[currentLevel]}
+                {LEVEL_LABELS[displayLevel]}
               </div>
             </div>
 
